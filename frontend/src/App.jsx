@@ -1,84 +1,110 @@
-import { useState } from 'react'
-import { FolderIcon, Cog6ToothIcon } from '@heroicons/react/20/solid'
+import { useMemo, useState } from 'react'
+import { ArrowPathIcon, DocumentCheckIcon, FolderIcon } from '@heroicons/react/24/outline'
+
+import Header from './components/Header'
+import ResultsTable from './components/ResultsTable'
+import StatusBanner from './components/StatusBanner'
+import SummaryCard from './components/SummaryCard'
+import UploadPanel from './components/UploadPanel'
+import { processarDocumentos } from './utils/api'
 
 function App() {
   const [files, setFiles] = useState([])
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [error, setError] = useState('')
+  const [resultado, setResultado] = useState(null)
 
-  const handleDirectoryUpload = (event) => {
-    const selectedFiles = Array.from(event.target.files)
+  const totalRegistros = useMemo(() => {
+    if (!resultado?.dados_extraidos) return 0
+    return resultado.dados_extraidos.reduce(
+      (acc, doc) => acc + Math.max(doc.nomes.length, doc.cpfs.length, 1),
+      0
+    )
+  }, [resultado])
+
+  const handleFilesSelected = (selectedFiles) => {
     setFiles(selectedFiles)
+    setError('')
   }
 
+  const handleProcess = async () => {
+    if (files.length === 0) return
+
+    try {
+      setIsProcessing(true)
+      setError('')
+      const response = await processarDocumentos(files)
+      setResultado(response)
+    } catch (processingError) {
+      setError(processingError.message)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const resumo = resultado?.resumo
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full md:w-56 bg-white shadow-md p-4 flex flex-col">
-        <h1 className="text-lg font-bold text-gray-800 mb-6">Cartório Inteligente</h1>
-        <nav className="space-y-4">
-          <div className="flex items-center gap-2 text-gray-700 text-sm font-medium hover:text-blue-600 cursor-pointer">
-            <FolderIcon className="w-4 h-4" />
-            <span>Upload</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-500 text-sm hover:text-blue-600 cursor-pointer">
-            <Cog6ToothIcon className="w-4 h-4" />
-            <span>Configurações</span>
-          </div>
-        </nav>
-      </aside>
+    <div className="min-h-screen bg-slate-100">
+      <Header />
 
-      {/* Main content */}
-      <main className="flex-1 px-6 py-10 flex flex-col items-center justify-center text-gray-800">
-        <h2 className="text-xl font-bold mb-1 text-center">OCR de Documentos</h2>
-        <p className="text-xs text-gray-500 mb-6 text-center">via seleção de diretório</p>
-
-        <div className="w-full max-w-md bg-white rounded-lg shadow p-5 mb-6">
-          <label className="block mb-2 text-sm font-medium">
-            Selecione uma pasta com documentos:
-          </label>
-          <input
-            type="file"
-            webkitdirectory="true"
-            directory="true"
-            onChange={handleDirectoryUpload}
-            className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 p-2 focus:outline-none"
+      <main className="mx-auto grid max-w-6xl gap-8 px-6 py-10 lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="lg:col-span-1">
+          <UploadPanel
+            files={files}
+            onFilesSelected={handleFilesSelected}
+            onProcessClick={handleProcess}
+            isProcessing={isProcessing}
+            processingEnabled={files.length > 0}
           />
-          <p className="mt-2 text-xs text-gray-500">
-            {files.length === 0 ? 'Nenhum arquivo escolhido' : `${files.length} arquivos selecionados`}
-          </p>
-        </div>
 
-        <button
-          className="w-full max-w-md py-2.5 bg-blue-600 text-white text-sm font-semibold rounded hover:bg-blue-700 disabled:opacity-50"
-          disabled={files.length === 0}
-          onClick={() => alert('Enviar para backend (em breve)')}
-        >
-          Processar documentos
-        </button>
+          <div className="mt-6 space-y-3">
+            <StatusBanner
+              type={error ? 'error' : 'info'}
+              message={
+                error ||
+                'Os arquivos enviados são armazenados temporariamente e podem ser exportados em Excel, HTML ou JSON.'
+              }
+            />
+            {resumo ? (
+              <StatusBanner
+                type="success"
+                message={`Exportação gerada em: ${resumo.arquivo_exportado}`}
+              />
+            ) : null}
+          </div>
+        </section>
 
-        <div className="mt-10">
-          <img
-            src="https://cdn-icons-png.flaticon.com/512/3062/3062634.png"
-            alt="Ilustração OCR"
-            className="w-32 h-32 mx-auto"
-          />
-        </div>
+        <section className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <SummaryCard
+              title="Arquivos processados"
+              value={resumo?.quantidade_arquivos ?? 0}
+              description="Quantidade total de documentos recebidos nesta execução."
+              icon={FolderIcon}
+              tone="blue"
+            />
+            <SummaryCard
+              title="Registros mapeados"
+              value={totalRegistros}
+              description="Somatório de nomes/CPFs identificados."
+              icon={DocumentCheckIcon}
+              tone="emerald"
+            />
+            <SummaryCard
+              title="Motor selecionado"
+              value={resumo?.motor_usado ?? 'Aguardando envio'}
+              description={resumo ? `Arquivo exportado: ${resumo.arquivo_exportado}` : 'O motor é escolhido automaticamente.'}
+              icon={ArrowPathIcon}
+              tone="slate"
+            />
+          </div>
+
+          <ResultsTable documentos={resultado?.dados_extraidos ?? []} />
+        </section>
       </main>
     </div>
   )
 }
-
-/*import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Resultados from './pages/Resultados'
-
-function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Resultados />} />
-        {/* Outras rotas futuras }
-      </Routes>
-    </Router>
-  )
-}*/
 
 export default App
