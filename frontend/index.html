@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>OCR de Documentos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar" role="navigation" aria-label="Menu lateral">
+      <h2>Menu</h2>
+      <ul>
+        <li><a href="#" id="uploadTab">Upload</a></li>
+        <li><a href="#" id="dirTab">Diretório</a></li>
+      </ul>
+    </aside>
+
+    <main class="conteudo">
+      <header>
+        <h1>OCR de Documentos</h1>
+        <p class="subtitulo">em segundos e de maneira fácil</p>
+      </header>
+
+      <!-- Upload único -->
+      <section id="uploadSection" class="formulario">
+        <h3>Upload único</h3>
+        <label for="fileInput" class="file-label">Escolher arquivo</label>
+        <input type="file" id="fileInput" name="file" />
+        <span id="fileName">Nenhum arquivo escolhido</span>
+        <button id="uploadBtn">Processar documento</button>
+      </section>
+
+      <!-- Upload de pasta -->
+      <section id="folderSection" class="formulario">
+        <h3>Upload de pasta</h3>
+        <label for="folderInput" class="file-label">Selecionar pasta</label>
+        <input type="file" id="folderInput" webkitdirectory multiple />
+        <span id="folderCount">Nenhum arquivo selecionado</span>
+        <button id="folderBtn">Processar pasta</button>
+      </section>
+
+      <!-- Processar diretório -->
+      <section id="dirSection" class="formulario hidden">
+        <h3>Processar diretório</h3>
+        <label for="dirInput" class="file-label">Caminho do diretório</label>
+        <input type="text" id="dirInput" placeholder="Ex: C:\\Projetos\\documentos" />
+        <button id="dirBtn">Processar diretório</button>
+      </section>
+
+      <!-- Ilustração -->
+      <section class="ilustracao">
+        <img src="/static/assets/ilustracao.png" alt="Ilustração de OCR" />
+      </section>
+
+      <!-- Resultado -->
+      <section>
+        <pre id="resultado"></pre>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
