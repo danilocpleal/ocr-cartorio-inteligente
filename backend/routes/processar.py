@@ -1,31 +1,23 @@
-from fastapi import APIRouter, Query
-from utils.file_loader import contar_arquivos, listar_arquivos
-from engines.tesseract_engine import processar_com_tesseract
-from engines.google_engine import processar_com_google
-from engines.nextcode_engine import processar_com_nextcode
-from export.excel import export_to_excel
+"""Rotas responsáveis pelo processamento dos arquivos."""
+from __future__ import annotations
 
-router = APIRouter()
+from fastapi import APIRouter, HTTPException, Query
 
-@router.get("/processar/")
-def processar_diretorio(caminho: str = Query(..., description="Caminho do diretório com arquivos")):
-    qtd = contar_arquivos(caminho)
-    arquivos = listar_arquivos(caminho)
+from models import ProcessamentoResponse
+from services.ocr_service import processar_caminho
 
-    if qtd < 10000:
-        motor = "Tesseract + IA Local"
-        dados = processar_com_tesseract(arquivos)
-    elif qtd <= 100000:
-        motor = "Google Document AI"
-        dados = processar_com_google(arquivos)
-    else:
-        motor = "Nextcode OCR"
-        dados = processar_com_nextcode(arquivos)
+router = APIRouter(prefix="/processar", tags=["Processamento"])
 
-    export_to_excel(dados, "resultado.xlsx")
 
-    return {
-        "motor_usado": motor,
-        "quantidade_arquivos": qtd,
-        "dados_extraidos": dados
-    }
+@router.get("/diretorio", response_model=ProcessamentoResponse)
+def processar_diretorio(
+    caminho: str = Query(..., description="Caminho do diretório com arquivos para OCR")
+) -> ProcessamentoResponse:
+    """Processa todos os arquivos encontrados no diretório informado."""
+
+    try:
+        return processar_caminho(caminho)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover - fallback genérico
+        raise HTTPException(status_code=500, detail=str(exc)) from exc

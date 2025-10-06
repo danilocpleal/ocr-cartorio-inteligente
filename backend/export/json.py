@@ -1,5 +1,23 @@
-import json
+"""Exportação dos resultados em JSON."""
+from __future__ import annotations
 
-def export_to_json(dados_lista: list, output_path: str):
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(dados_lista, f, ensure_ascii=False, indent=2)
+import json
+from pathlib import Path
+from typing import Iterable
+
+from models import DocumentoExtraido
+
+
+def export_to_json(dados_lista: Iterable[DocumentoExtraido], output_path: str | Path) -> Path:
+    serializavel = []
+    for item in dados_lista:
+        if isinstance(item, DocumentoExtraido):
+            serializavel.append(item.model_dump())
+        else:
+            serializavel.append(dict(item))
+
+    output_path = Path(output_path)
+    output_path.write_text(
+        json.dumps(serializavel, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    return output_path

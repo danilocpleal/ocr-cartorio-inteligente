@@ -1,17 +1,21 @@
-from fastapi import APIRouter, UploadFile, File
+"""Rotas responsáveis por upload de arquivos."""
+from __future__ import annotations
+
 from typing import List
-import shutil
-import os
 
-router = APIRouter()
-os.makedirs("temp", exist_ok=True)
+from fastapi import APIRouter, File, HTTPException, UploadFile
 
-@router.post("/upload-multiplos/")
-async def upload_multiplos(files: List[UploadFile] = File(...)):
-    resultados = []
-    for file in files:
-        file_path = f"temp/{file.filename}"
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        resultados.append({"filename": file.filename, "saved_to": file_path})
-    return resultados
+from models import ProcessamentoResponse
+from services.ocr_service import processar_uploads
+
+router = APIRouter(prefix="/upload", tags=["Uploads"])
+
+
+@router.post("/multiplos", response_model=ProcessamentoResponse)
+async def upload_multiplos(files: List[UploadFile] = File(...)) -> ProcessamentoResponse:
+    """Recebe múltiplos arquivos, processa e retorna o resultado."""
+
+    if not files:
+        raise HTTPException(status_code=400, detail="Nenhum arquivo recebido")
+
+    return await processar_uploads(files)
